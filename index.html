@@ -191,32 +191,74 @@
         animation: shake 90ms linear infinite;
       }
 
-      .is-closed {
+      .is-blackout {
         background: #020617;
       }
 
-      .is-closed main,
-      .is-closed .attack-overlay,
-      .is-closed::before,
-      .is-closed::after {
+      .is-blackout main,
+      .is-blackout .attack-overlay,
+      .is-blackout::before,
+      .is-blackout::after {
         display: none;
       }
 
-      .closed-message {
+      .readme-tab {
         position: fixed;
-        inset: 0;
         z-index: 20;
+        top: 50%;
+        left: 50%;
+        width: min(82vw, 360px);
+        min-height: 190px;
+        padding: 18px 20px 22px;
         display: none;
-        place-items: center;
-        padding: 24px;
         color: #e5e7eb;
-        background: #020617;
+        background: #07111f;
+        border: 1px solid rgba(148, 163, 184, 0.42);
+        border-radius: 8px;
+        box-shadow:
+          0 26px 80px rgba(0, 0, 0, 0.62),
+          0 0 28px rgba(255, 0, 64, 0.16);
         font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-        text-align: center;
+        text-align: left;
+        transform: translate(-50%, -50%);
+        animation: readme-tab-in 420ms ease-out both;
       }
 
-      .is-closed .closed-message {
-        display: grid;
+      .readme-tab::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 30px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        background: rgba(15, 23, 42, 0.78);
+      }
+
+      .readme-tab h2,
+      .readme-tab p {
+        position: relative;
+        margin: 0;
+      }
+
+      .readme-tab h2 {
+        padding-top: 40px;
+        color: #f8fafc;
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .readme-tab p {
+        margin-top: 20px;
+        min-height: 0;
+        color: #fca5a5;
+        font-size: 20px;
+        line-height: 1.8;
+        text-shadow: 0 0 14px rgba(255, 0, 64, 0.38);
+      }
+
+      .is-blackout .readme-tab {
+        display: block;
       }
 
       @keyframes warning-flash {
@@ -273,6 +315,18 @@
         }
       }
 
+      @keyframes readme-tab-in {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -46%) scale(0.92);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+
       @keyframes who-arrive {
         0% {
           opacity: 0;
@@ -312,7 +366,13 @@
         <span>SYSTEM ACCESS DETECTED</span>
       </div>
     </div>
-    <div class="closed-message">SESSION CLOSED</div>
+    <section class="readme-tab" aria-label="README2">
+      <h2>Website_AIGenerated</h2>
+      <p>
+        エラー<br>
+        下記の数字を入力してください
+      </p>
+    </section>
     <script>
       revealIntroText();
 
@@ -323,8 +383,7 @@
       }, 5000);
 
       window.setTimeout(function () {
-        document.body.classList.add("is-closed");
-        window.close();
+        document.body.classList.add("is-blackout");
       }, 10000);
 
       function revealIntroText() {
