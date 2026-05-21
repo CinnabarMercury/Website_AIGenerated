@@ -214,6 +214,7 @@
 
       .identity-overlay > div {
         width: min(90vw, 900px);
+        min-height: 2.36em;
         color: #ff1f3d;
         font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
         font-size: clamp(2.2rem, 9vw, 6rem);
@@ -224,9 +225,13 @@
         text-shadow:
           0 0 10px rgba(255, 31, 61, 0.9),
           0 0 34px rgba(255, 0, 64, 0.72);
+        animation: identity-message-in 180ms steps(2, end) both;
+      }
+
+      .is-identity-complete .identity-overlay > div {
         animation:
           identity-message-in 180ms steps(2, end) both,
-          identity-message-blink 300ms steps(1, end) 1s 3;
+          identity-message-blink 300ms steps(1, end) 0.5s 3;
       }
 
       .is-identity-visible .identity-overlay {
@@ -519,7 +524,7 @@
       </div>
     </div>
     <div class="identity-overlay" aria-hidden="true">
-      <div>君は誰？<br>わたしじゃないね</div>
+      <div id="identity-text"></div>
     </div>
     <section class="readme-tab" aria-label="README2">
       <h2>Website_AIGenerated</h2>
@@ -541,6 +546,7 @@
       var readmeTimer = null;
       var restoreTimer = null;
       var identityTimer = null;
+      var identityTypeTimer = null;
       var secondBlackoutTimer = null;
       var accessCode = "";
 
@@ -553,11 +559,13 @@
         window.clearTimeout(readmeTimer);
         window.clearTimeout(restoreTimer);
         window.clearTimeout(identityTimer);
+        window.clearTimeout(identityTypeTimer);
         window.clearTimeout(secondBlackoutTimer);
 
-        document.body.classList.remove("is-under-attack", "is-blackout", "is-readme-visible", "is-restoring", "is-identity-visible");
+        document.body.classList.remove("is-under-attack", "is-blackout", "is-readme-visible", "is-restoring", "is-identity-visible", "is-identity-complete");
         document.querySelector(".attack-overlay").classList.remove("is-active");
         document.querySelector(".who-layer").textContent = "";
+        document.getElementById("identity-text").textContent = "";
         document.getElementById("code-input").value = "";
         document.getElementById("code-input").disabled = false;
         document.querySelector(".code-form button").disabled = false;
@@ -581,16 +589,47 @@
 
         identityTimer = window.setTimeout(function () {
           document.body.classList.add("is-identity-visible");
+          revealIdentityText(function () {
+            document.body.classList.add("is-identity-complete");
 
-          secondBlackoutTimer = window.setTimeout(function () {
-            document.body.classList.remove("is-identity-visible");
+            secondBlackoutTimer = window.setTimeout(function () {
+              document.body.classList.remove("is-identity-visible", "is-identity-complete");
 
-            readmeTimer = window.setTimeout(function () {
-              document.body.classList.add("is-readme-visible");
-              document.getElementById("code-input").focus();
-            }, 1000);
-          }, 2200);
+              readmeTimer = window.setTimeout(function () {
+                document.body.classList.add("is-readme-visible");
+                document.getElementById("code-input").focus();
+              }, 1000);
+            }, 2200);
+          });
         }, 1000);
+      }
+
+      function revealIdentityText(onComplete) {
+        var identity = document.getElementById("identity-text");
+        var text = "君は誰？\nわたしじゃないね";
+        var duration = 1200;
+        var index = 0;
+        var interval = duration / text.length;
+
+        identity.textContent = "";
+
+        function appendCharacter() {
+          if (index >= text.length) {
+            onComplete();
+            return;
+          }
+
+          if (text.charAt(index) === "\n") {
+            identity.appendChild(document.createElement("br"));
+          } else {
+            identity.appendChild(document.createTextNode(text.charAt(index)));
+          }
+
+          index += 1;
+          identityTypeTimer = window.setTimeout(appendCharacter, interval);
+        }
+
+        appendCharacter();
       }
 
       function generateAccessCode() {
