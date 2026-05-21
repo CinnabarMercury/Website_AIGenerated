@@ -35,7 +35,7 @@
 
       p {
         margin: 0;
-        font-size: 1.125rem;
+        font-size: 30px;
         line-height: 1.7;
         color: #4b5563;
       }
@@ -74,17 +74,22 @@
 
       .who-text {
         position: absolute;
+        transform: translate(-50%, -50%) rotate(var(--rotation));
+        animation: who-arrive 600ms ease-out both;
+      }
+
+      .who-text span {
+        display: block;
         color: rgba(255, 255, 255, 0.88);
         font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-        font-size: clamp(0.95rem, 3vw, 1.85rem);
+        font-size: var(--font-size);
         font-weight: 700;
         line-height: 1;
         text-shadow:
           0 0 8px rgba(255, 255, 255, 0.8),
           0 0 18px rgba(255, 0, 64, 0.9);
         white-space: nowrap;
-        transform: translate(-50%, -50%) rotate(var(--rotation));
-        animation: who-arrive 600ms ease-out both;
+        animation: who-pulse var(--pulse-duration) ease-in-out var(--pulse-delay) infinite alternate;
       }
 
       .attack-message {
@@ -172,6 +177,16 @@
           transform: translate(-50%, -50%) scale(1) rotate(var(--rotation));
         }
       }
+
+      @keyframes who-pulse {
+        0% {
+          transform: scale(var(--min-scale));
+        }
+
+        100% {
+          transform: scale(var(--max-scale));
+        }
+      }
     </style>
   </head>
   <body>
@@ -214,11 +229,18 @@
 
           for (var i = 0; i < count; i += 1) {
             var question = document.createElement("span");
+            var text = document.createElement("span");
             question.className = "who-text";
-            question.textContent = "Who are you?";
+            text.textContent = "Who are you?";
             question.style.left = Math.random() * 100 + "vw";
             question.style.top = Math.random() * 100 + "vh";
             question.style.setProperty("--rotation", Math.random() * 40 - 20 + "deg");
+            question.style.setProperty("--font-size", Math.random() * 42 + 16 + "px");
+            question.style.setProperty("--min-scale", Math.random() * 0.35 + 0.65);
+            question.style.setProperty("--max-scale", Math.random() * 1.25 + 1.2);
+            question.style.setProperty("--pulse-duration", Math.random() * 1200 + 650 + "ms");
+            question.style.setProperty("--pulse-delay", Math.random() * 500 + "ms");
+            question.appendChild(text);
             layer.appendChild(question);
           }
 
