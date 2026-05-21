@@ -257,7 +257,68 @@
         text-shadow: 0 0 14px rgba(255, 0, 64, 0.38);
       }
 
-      .is-blackout .readme-tab {
+      .access-code {
+        position: relative;
+        margin-top: 18px;
+        padding: 10px 12px;
+        color: #f8fafc;
+        background: #020617;
+        border: 1px solid rgba(248, 113, 113, 0.45);
+        border-radius: 6px;
+        font-size: 24px;
+        letter-spacing: 0.18em;
+        text-align: center;
+        text-shadow: 0 0 16px rgba(248, 113, 113, 0.52);
+      }
+
+      .code-form {
+        position: relative;
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .code-form input {
+        min-width: 0;
+        flex: 1;
+        padding: 10px 12px;
+        color: #e5e7eb;
+        background: #020617;
+        border: 1px solid rgba(148, 163, 184, 0.48);
+        border-radius: 6px;
+        font: inherit;
+        font-size: 16px;
+      }
+
+      .code-form input:focus {
+        border-color: #f87171;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.18);
+      }
+
+      .code-form button {
+        padding: 10px 14px;
+        color: #020617;
+        background: #fca5a5;
+        border: 0;
+        border-radius: 6px;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .code-error {
+        position: relative;
+        min-height: 1.4em;
+        margin-top: 12px;
+        color: #ff3b3b;
+        font-size: 14px;
+        line-height: 1.4;
+        text-shadow: 0 0 12px rgba(255, 0, 0, 0.55);
+      }
+
+      .is-readme-visible .readme-tab {
         display: block;
       }
 
@@ -372,19 +433,66 @@
         エラー<br>
         下記の数字を入力してください
       </p>
+      <div class="access-code" id="access-code"></div>
+      <form class="code-form" id="code-form">
+        <input id="code-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-label="8桁の数字">
+        <button type="submit">Enter</button>
+      </form>
+      <div class="code-error" id="code-error" aria-live="polite"></div>
     </section>
     <script>
-      revealIntroText();
+      var attackTimer = null;
+      var blackoutTimer = null;
+      var readmeTimer = null;
+      var accessCode = "";
 
-      window.setTimeout(function () {
-        document.body.classList.add("is-under-attack");
-        document.querySelector(".attack-overlay").classList.add("is-active");
-        fillScreenWithQuestions();
-      }, 5000);
+      startSite();
+      document.getElementById("code-form").addEventListener("submit", submitAccessCode);
 
-      window.setTimeout(function () {
-        document.body.classList.add("is-blackout");
-      }, 10000);
+      function startSite() {
+        window.clearTimeout(attackTimer);
+        window.clearTimeout(blackoutTimer);
+        window.clearTimeout(readmeTimer);
+
+        document.body.classList.remove("is-under-attack", "is-blackout", "is-readme-visible");
+        document.querySelector(".attack-overlay").classList.remove("is-active");
+        document.querySelector(".who-layer").textContent = "";
+        document.getElementById("code-input").value = "";
+        document.getElementById("code-error").textContent = "";
+        generateAccessCode();
+        revealIntroText();
+
+        attackTimer = window.setTimeout(function () {
+          document.body.classList.add("is-under-attack");
+          document.querySelector(".attack-overlay").classList.add("is-active");
+          fillScreenWithQuestions();
+        }, 5000);
+
+        blackoutTimer = window.setTimeout(function () {
+          document.body.classList.add("is-blackout");
+
+          readmeTimer = window.setTimeout(function () {
+            document.body.classList.add("is-readme-visible");
+            document.getElementById("code-input").focus();
+          }, 3000);
+        }, 10000);
+      }
+
+      function generateAccessCode() {
+        accessCode = String(Math.floor(Math.random() * 100000000)).padStart(8, "0");
+        document.getElementById("access-code").textContent = accessCode;
+      }
+
+      function submitAccessCode(event) {
+        event.preventDefault();
+
+        if (document.getElementById("code-input").value === accessCode) {
+          startSite();
+          return;
+        }
+
+        document.getElementById("code-error").textContent = "入力が違います。もう一度やり直してください。";
+      }
 
       function revealIntroText() {
         var intro = document.getElementById("intro-text");
@@ -399,6 +507,7 @@
         var cursor = document.createElement("span");
         var interval = duration / text.length;
 
+        intro.textContent = "";
         cursor.className = "intro-cursor";
 
         function appendCharacter() {
