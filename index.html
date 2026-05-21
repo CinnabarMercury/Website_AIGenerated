@@ -318,8 +318,39 @@
         text-shadow: 0 0 12px rgba(255, 0, 0, 0.55);
       }
 
+      .loading-status {
+        position: relative;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-top: 16px;
+        color: #bfdbfe;
+        font-size: 14px;
+        line-height: 1.4;
+        text-shadow: 0 0 12px rgba(96, 165, 250, 0.42);
+      }
+
+      .loading-status::before {
+        content: "";
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(191, 219, 254, 0.24);
+        border-top-color: #bfdbfe;
+        border-radius: 50%;
+        animation: loading-spin 760ms linear infinite;
+      }
+
       .is-readme-visible .readme-tab {
         display: block;
+      }
+
+      .is-restoring .code-form,
+      .is-restoring .code-error {
+        display: none;
+      }
+
+      .is-restoring .loading-status {
+        display: flex;
       }
 
       @keyframes warning-flash {
@@ -388,6 +419,12 @@
         }
       }
 
+      @keyframes loading-spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
       @keyframes who-arrive {
         0% {
           opacity: 0;
@@ -439,11 +476,13 @@
         <button type="submit">Enter</button>
       </form>
       <div class="code-error" id="code-error" aria-live="polite"></div>
+      <div class="loading-status" aria-live="polite">サイトを再表示しています</div>
     </section>
     <script>
       var attackTimer = null;
       var blackoutTimer = null;
       var readmeTimer = null;
+      var restoreTimer = null;
       var accessCode = "";
 
       startSite();
@@ -453,11 +492,14 @@
         window.clearTimeout(attackTimer);
         window.clearTimeout(blackoutTimer);
         window.clearTimeout(readmeTimer);
+        window.clearTimeout(restoreTimer);
 
-        document.body.classList.remove("is-under-attack", "is-blackout", "is-readme-visible");
+        document.body.classList.remove("is-under-attack", "is-blackout", "is-readme-visible", "is-restoring");
         document.querySelector(".attack-overlay").classList.remove("is-active");
         document.querySelector(".who-layer").textContent = "";
         document.getElementById("code-input").value = "";
+        document.getElementById("code-input").disabled = false;
+        document.querySelector(".code-form button").disabled = false;
         document.getElementById("code-error").textContent = "";
         generateAccessCode();
         revealIntroText();
@@ -487,7 +529,11 @@
         event.preventDefault();
 
         if (document.getElementById("code-input").value === accessCode) {
-          startSite();
+          document.body.classList.add("is-restoring");
+          document.getElementById("code-input").disabled = true;
+          document.querySelector(".code-form button").disabled = true;
+          document.getElementById("code-error").textContent = "";
+          restoreTimer = window.setTimeout(startSite, 3000);
           return;
         }
 
@@ -536,6 +582,7 @@
         var start = Date.now();
         var duration = 5000;
         var questions = [
+          { text: "Who are you?", direction: "ltr" },
           { text: "Qui es-tu ?", direction: "ltr" },
           { text: "Wer bist du?", direction: "ltr" },
           { text: "¿Quién eres?", direction: "ltr" },
