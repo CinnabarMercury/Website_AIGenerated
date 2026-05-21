@@ -92,10 +92,21 @@
 
       p {
         margin: 0;
+        min-height: 3.4em;
         font-size: 30px;
         line-height: 1.7;
         color: #34405c;
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+      }
+
+      .intro-cursor {
+        display: inline-block;
+        width: 0.08em;
+        height: 1em;
+        margin-left: 0.08em;
+        background: currentColor;
+        vertical-align: -0.12em;
+        animation: cursor-blink 760ms steps(2, end) infinite;
       }
 
       .attack-overlay {
@@ -132,21 +143,27 @@
 
       .who-text {
         position: absolute;
-        transform: translate(-50%, -50%) rotate(var(--rotation));
+        transform: translate3d(-50%, -50%, 0) rotate(var(--rotation));
+        will-change: opacity, transform;
         animation: who-arrive 600ms ease-out both;
       }
 
       .who-text span {
         display: block;
+        color: rgba(148, 163, 184, 0.42);
         font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
         font-size: var(--font-size);
         font-weight: 700;
         line-height: 1;
         text-shadow:
-          0 0 8px rgba(255, 255, 255, 0.8),
-          0 0 18px rgba(255, 0, 64, 0.9);
+          0 0 6px currentColor,
+          0 0 18px rgba(255, 0, 64, 0.58);
+        transform: translateZ(0) scale(var(--min-scale));
+        transform-origin: center;
+        backface-visibility: hidden;
+        will-change: color, filter, transform;
         white-space: nowrap;
-        animation: who-pulse var(--pulse-duration) ease-in-out var(--pulse-delay) infinite alternate;
+        animation: who-pulse var(--pulse-duration) cubic-bezier(0.37, 0, 0.63, 1) var(--pulse-delay) infinite alternate;
       }
 
       .attack-message {
@@ -246,34 +263,39 @@
         }
       }
 
+      @keyframes cursor-blink {
+        0% {
+          opacity: 1;
+        }
+
+        100% {
+          opacity: 0;
+        }
+      }
+
       @keyframes who-arrive {
         0% {
           opacity: 0;
-          transform: translate(-50%, -50%) scale(0.4) rotate(var(--rotation));
+          transform: translate3d(-50%, -50%, 0) scale(0.4) rotate(var(--rotation));
         }
 
         100% {
           opacity: 1;
-          transform: translate(-50%, -50%) scale(1) rotate(var(--rotation));
+          transform: translate3d(-50%, -50%, 0) scale(1) rotate(var(--rotation));
         }
       }
 
       @keyframes who-pulse {
         0% {
           color: rgba(148, 163, 184, 0.42);
-          text-shadow:
-            0 0 4px rgba(148, 163, 184, 0.28),
-            0 0 10px rgba(255, 0, 64, 0.25);
-          transform: scale(var(--min-scale));
+          filter: brightness(0.72) drop-shadow(0 0 4px rgba(255, 0, 64, 0.28));
+          transform: translateZ(0) scale(var(--min-scale));
         }
 
         100% {
           color: rgba(255, 255, 255, 0.98);
-          text-shadow:
-            0 0 10px rgba(255, 255, 255, 0.95),
-            0 0 24px rgba(255, 0, 64, 0.95),
-            0 0 42px rgba(255, 0, 64, 0.72);
-          transform: scale(var(--max-scale));
+          filter: brightness(1.35) drop-shadow(0 0 18px rgba(255, 0, 64, 0.82));
+          transform: translateZ(0) scale(var(--max-scale));
         }
       }
     </style>
@@ -281,10 +303,7 @@
   <body>
     <main>
       <h1>Website_AIGenerated</h1>
-      <p>
-        こんにちは。ここはAIが作ってくれた私の世界<br>
-        君はどうやって入ってきたんだい？
-      </p>
+      <p id="intro-text" aria-label="こんにちは。ここはAIが作ってくれた私の世界 君はどうやって入ってきたんだい？"></p>
     </main>
     <div class="attack-overlay" aria-hidden="true">
       <div class="who-layer"></div>
@@ -295,6 +314,8 @@
     </div>
     <div class="closed-message">SESSION CLOSED</div>
     <script>
+      revealIntroText();
+
       window.setTimeout(function () {
         document.body.classList.add("is-under-attack");
         document.querySelector(".attack-overlay").classList.add("is-active");
@@ -305,6 +326,42 @@
         document.body.classList.add("is-closed");
         window.close();
       }, 10000);
+
+      function revealIntroText() {
+        var intro = document.getElementById("intro-text");
+        var parts = [
+          "こんにちは。ここはAIが作ってくれた私の世界",
+          "\n",
+          "君はどうやって入ってきたんだい？"
+        ];
+        var text = parts.join("");
+        var duration = 3000;
+        var index = 0;
+        var cursor = document.createElement("span");
+        var interval = duration / text.length;
+
+        cursor.className = "intro-cursor";
+
+        function appendCharacter() {
+          if (index >= text.length) {
+            cursor.remove();
+            return;
+          }
+
+          if (text.charAt(index) === "\n") {
+            intro.appendChild(document.createElement("br"));
+          } else {
+            intro.appendChild(document.createTextNode(text.charAt(index)));
+          }
+
+          index += 1;
+          intro.appendChild(cursor);
+          window.setTimeout(appendCharacter, interval);
+        }
+
+        intro.appendChild(cursor);
+        appendCharacter();
+      }
 
       function fillScreenWithQuestions() {
         var layer = document.querySelector(".who-layer");
@@ -349,7 +406,7 @@
             question.style.setProperty("--font-size", Math.random() * 42 + 16 + "px");
             question.style.setProperty("--min-scale", Math.random() * 0.35 + 0.65);
             question.style.setProperty("--max-scale", Math.random() * 1.25 + 1.2);
-            question.style.setProperty("--pulse-duration", Math.random() * 1200 + 650 + "ms");
+            question.style.setProperty("--pulse-duration", Math.random() * 1600 + 1600 + "ms");
             question.style.setProperty("--pulse-delay", Math.random() * 500 + "ms");
             question.appendChild(text);
             layer.appendChild(question);
