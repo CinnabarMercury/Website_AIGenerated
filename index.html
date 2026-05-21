@@ -197,66 +197,40 @@
 
       .is-blackout main,
       .is-blackout .attack-overlay,
-      .is-blackout .camera-overlay,
       .is-blackout::before,
       .is-blackout::after {
         display: none;
       }
 
-      .camera-overlay {
+      .identity-overlay {
         position: fixed;
         inset: 0;
         z-index: 15;
         display: none;
-        overflow: hidden;
         place-items: center;
+        justify-items: center;
         background: #020617;
-        color: #fef08a;
       }
 
-      .is-camera-active .camera-overlay {
-        display: grid;
-      }
-
-      .camera-overlay video,
-      .camera-overlay canvas {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-      }
-
-      .camera-overlay video {
-        object-fit: contain;
-        transform: scaleX(-1);
-      }
-
-      .camera-overlay canvas {
-        z-index: 1;
-      }
-
-      .camera-message {
-        position: relative;
-        z-index: 2;
-        max-width: min(86vw, 720px);
-        padding: 0 20px;
-        color: #fef08a;
+      .identity-overlay > div {
+        width: min(90vw, 900px);
+        color: #ff1f3d;
         font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-        font-size: clamp(1.8rem, 7vw, 4.8rem);
-        font-weight: 800;
-        line-height: 1.25;
+        font-size: clamp(2.2rem, 9vw, 6rem);
+        font-weight: 900;
+        line-height: 1.18;
         text-align: center;
+        text-transform: uppercase;
         text-shadow:
-          0 0 12px rgba(250, 204, 21, 0.82),
-          0 0 30px rgba(255, 0, 64, 0.5);
-        opacity: 0;
-        transform: scale(0.94);
-        transition: opacity 220ms ease, transform 220ms ease;
+          0 0 10px rgba(255, 31, 61, 0.9),
+          0 0 34px rgba(255, 0, 64, 0.72);
+        animation:
+          identity-message-in 180ms steps(2, end) both,
+          identity-message-blink 300ms steps(1, end) 1s 3;
       }
 
-      .is-face-found .camera-message {
-        opacity: 1;
-        transform: scale(1);
+      .is-identity-visible .identity-overlay {
+        display: grid;
       }
 
       .readme-tab {
@@ -482,6 +456,29 @@
         }
       }
 
+      @keyframes identity-message-in {
+        0% {
+          opacity: 0;
+          transform: scale(1.08);
+        }
+
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes identity-message-blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0;
+        }
+      }
+
       @keyframes who-arrive {
         0% {
           opacity: 0;
@@ -521,10 +518,8 @@
         <span>SYSTEM ACCESS DETECTED</span>
       </div>
     </div>
-    <div class="camera-overlay" aria-hidden="true">
-      <video id="camera-video" autoplay muted playsinline></video>
-      <canvas id="face-canvas"></canvas>
-      <div class="camera-message">君は誰？<br>私じゃないね</div>
+    <div class="identity-overlay" aria-hidden="true">
+      <div>君は誰？<br>わたしじゃないね</div>
     </div>
     <section class="readme-tab" aria-label="README2">
       <h2>Website_AIGenerated</h2>
@@ -545,9 +540,8 @@
       var blackoutTimer = null;
       var readmeTimer = null;
       var restoreTimer = null;
-      var faceScanTimer = null;
-      var faceDetectFrame = null;
-      var faceStream = null;
+      var identityTimer = null;
+      var secondBlackoutTimer = null;
       var accessCode = "";
 
       startSite();
@@ -558,14 +552,12 @@
         window.clearTimeout(blackoutTimer);
         window.clearTimeout(readmeTimer);
         window.clearTimeout(restoreTimer);
-        window.clearTimeout(faceScanTimer);
-        window.cancelAnimationFrame(faceDetectFrame);
-        stopCamera();
+        window.clearTimeout(identityTimer);
+        window.clearTimeout(secondBlackoutTimer);
 
-        document.body.classList.remove("is-under-attack", "is-blackout", "is-readme-visible", "is-restoring", "is-camera-active", "is-face-found");
+        document.body.classList.remove("is-under-attack", "is-blackout", "is-readme-visible", "is-restoring", "is-identity-visible");
         document.querySelector(".attack-overlay").classList.remove("is-active");
         document.querySelector(".who-layer").textContent = "";
-        clearFaceCanvas();
         document.getElementById("code-input").value = "";
         document.getElementById("code-input").disabled = false;
         document.querySelector(".code-form button").disabled = false;
@@ -580,120 +572,25 @@
         }, 5000);
 
         blackoutTimer = window.setTimeout(function () {
-          beginFaceScan();
+          showIdentityMessage();
         }, 10000);
       }
 
-      function blackoutToReadme() {
-        stopCamera();
-        clearFaceCanvas();
-        document.body.classList.remove("is-camera-active", "is-face-found");
+      function showIdentityMessage() {
         document.body.classList.add("is-blackout");
 
-        readmeTimer = window.setTimeout(function () {
-          document.body.classList.add("is-readme-visible");
-          document.getElementById("code-input").focus();
-        }, 3000);
-      }
+        identityTimer = window.setTimeout(function () {
+          document.body.classList.add("is-identity-visible");
 
-      function stopCamera() {
-        if (faceStream) {
-          faceStream.getTracks().forEach(function (track) {
-            track.stop();
-          });
-        }
+          secondBlackoutTimer = window.setTimeout(function () {
+            document.body.classList.remove("is-identity-visible");
 
-        faceStream = null;
-        document.getElementById("camera-video").srcObject = null;
-      }
-
-      function clearFaceCanvas() {
-        var canvas = document.getElementById("face-canvas");
-        canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-      }
-
-      function beginFaceScan() {
-        var video = document.getElementById("camera-video");
-
-        document.body.classList.add("is-camera-active");
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          faceScanTimer = window.setTimeout(blackoutToReadme, 1800);
-          return;
-        }
-
-        navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
-          audio: false
-        }).then(function (stream) {
-          faceStream = stream;
-          video.srcObject = stream;
-
-          return video.play();
-        }).then(function () {
-          if ("FaceDetector" in window) {
-            detectFaces();
-          } else {
-            faceScanTimer = window.setTimeout(blackoutToReadme, 2600);
-          }
-        }).catch(function () {
-          faceScanTimer = window.setTimeout(blackoutToReadme, 1800);
-        });
-      }
-
-      function detectFaces() {
-        var detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 4 });
-        var video = document.getElementById("camera-video");
-        var foundFace = false;
-
-        function scan() {
-          detector.detect(video).then(function (faces) {
-            drawFaceBoxes(faces, video);
-
-            if (faces.length > 0 && !foundFace) {
-              foundFace = true;
-              document.body.classList.add("is-face-found");
-              faceScanTimer = window.setTimeout(blackoutToReadme, 1800);
-              return;
-            }
-
-            if (!foundFace) {
-              faceDetectFrame = window.requestAnimationFrame(scan);
-            }
-          }).catch(function () {
-            faceScanTimer = window.setTimeout(blackoutToReadme, 1800);
-          });
-        }
-
-        scan();
-      }
-
-      function drawFaceBoxes(faces, video) {
-        var canvas = document.getElementById("face-canvas");
-        var context = canvas.getContext("2d");
-        var videoWidth = video.videoWidth || 1;
-        var videoHeight = video.videoHeight || 1;
-        var scale = Math.min(window.innerWidth / videoWidth, window.innerHeight / videoHeight);
-        var renderedWidth = videoWidth * scale;
-        var renderedHeight = videoHeight * scale;
-        var offsetX = (window.innerWidth - renderedWidth) / 2;
-        var offsetY = (window.innerHeight - renderedHeight) / 2;
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.strokeStyle = "#facc15";
-        context.lineWidth = 5;
-        context.shadowColor = "rgba(250, 204, 21, 0.9)";
-        context.shadowBlur = 18;
-
-        faces.forEach(function (face) {
-          var box = face.boundingBox;
-          var x = offsetX + (videoWidth - box.x - box.width) * scale;
-          var y = offsetY + box.y * scale;
-
-          context.strokeRect(x, y, box.width * scale, box.height * scale);
-        });
+            readmeTimer = window.setTimeout(function () {
+              document.body.classList.add("is-readme-visible");
+              document.getElementById("code-input").focus();
+            }, 1000);
+          }, 2200);
+        }, 1000);
       }
 
       function generateAccessCode() {
